@@ -4,14 +4,27 @@ import TableHeading from "@/Components/TableHeading";
 import TextInput from "@/Components/TextInput";
 import { PROJECT_STATUS_CLASS_MAP, PROJECT_STATUS_TEXT_MAP } from "@/constants";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link, router } from "@inertiajs/react";
-import { useState } from "react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
-export default function Index({ projects, queryParams, success }){
+export default function Index({ queryParams, success }){
+
+    const [projects, setProjects] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+
+    console.log(projects);
+
+    useEffect(() => {
+        axios.get(`/all-projects?page=${currentPage}`).then((response) => {
+            setProjects(data);
+        });
+    }, []);
 
     queryParams = queryParams || {};
 
-    const [successMsg, setSuccessMsg] = useState(success);
+    const {flash} = usePage().props;
+    const [flashMessage, setFlashMessage] = useState(flash);
 
     const searchFieldChange = (name, value) => {
         if(value){
@@ -44,11 +57,16 @@ export default function Index({ projects, queryParams, success }){
         router.get(route('projects.index'), queryParams);
     }
 
-    if(successMsg){
-        setTimeout(() => {
-            setSuccessMsg(null);
-        }, 4000);
-    }
+    useEffect(() => {
+        if (flash.success) {
+            const timeout = setTimeout(() => {
+                setFlashMessage([]);
+            }, 4000);
+
+            return () => clearTimeout(timeout);
+        }
+    }, [flash.success]);
+    
     
     return(
         <AuthenticatedLayout
@@ -70,8 +88,8 @@ export default function Index({ projects, queryParams, success }){
         <div className="py-12">
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    {successMsg && (<div className="bg-emerald-500 mb-2 py-3 px-4 text-white rounded">
-                        {successMsg}
+                    {flashMessage.success && (<div className="bg-emerald-500 mb-2 py-3 px-4 text-white rounded">
+                        {flashMessage.success}
                     </div>)}
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
@@ -164,13 +182,20 @@ export default function Index({ projects, queryParams, success }){
 }
 
 function ProjectsList({projects}){
+
+    const deleteProject = (id) => {
+
+        if(!window.confirm('Are you sure you want to delete this project?')) return;
+        router.delete(route('projects.destroy', id));
+    }
+
     return (
         <tbody>
             {projects.map((project, index) => (
                 <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700" key={project.id}>
                     <th className="px-3 py-5">{index+1}</th>
                     <td className="px-3 py-5">
-                        <img src={project.image} alt="" />
+                        <img src={project.image} className="w-10" alt="" />
                     </td>
                     <td className="px-3 py-5 text-nowrap text-gray-950 dark:text-white hover:underline">
                         <Link href={route('projects.show', project.id)}>
@@ -186,8 +211,8 @@ function ProjectsList({projects}){
                     <td className="px-3 py-5 text-nowrap">{new Date(project.due_date).toLocaleString()}</td>
                     <td className="px-3 py-5 text-nowrap">{project.createdBy.name}</td>
                     <td className="px-3 py-5 text-nowrap">
-                        <Link className="font-medium text-blue-600 dark:text-blue-500 hover:underline mx-1 bg-slate-700 py-3 px-2 rounded-md" href={route('projects.edit', project.id)}>Edit</Link>
-                        <button className="font-medium text-red-600 dark:text-red-500 hover:underline mx-1">Delete</button>
+                        <Link className="font-medium text-blue-600 dark:text-blue-500 bg-slate-700 hover:bg-slate-900 py-2 px-3 mx-1 rounded-md" href={route('projects.edit', project.id)}>Edit</Link>
+                        <button onClick={() => deleteProject(project.id)} className="font-medium text-white dark:text-white rounded-md bg-red-600 py-2 px-3 hover:bg-red-800 transition-all shadow mx-1">Delete</button>
                     </td>
                 </tr>
             ))}

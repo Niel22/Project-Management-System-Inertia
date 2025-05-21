@@ -10,9 +10,11 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ProjectResource;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
+use App\Traits\ApiResponse;
 
 class ProjectController extends Controller
 {
+    use ApiResponse;
     /**
      * Display a listing of the resource.
      */
@@ -36,10 +38,28 @@ class ProjectController extends Controller
                     ->paginate(10)
                     ->onEachSide(1);
 
-        return inertia('Project/Index', [
-            'projects' => ProjectResource::collection($project),
-            'queryParams' => request()->query() ?? null
-        ]);
+        return inertia('Project/Index');
+    }
+
+    public function fetchAllProjects(){
+        $query = Project::with(['createdBy', 'updatedBy']);
+
+        $sortField = request('sort_field', 'created_at');
+        $sortDirection = request('sort_direction', 'desc');
+
+        if(request('name')){
+            $query->where('name', 'like', '%'.request('name').'%');
+        }
+
+        if(request('status')){
+            $query->where('status', 'like', '%'.request('status').'%');
+        }
+
+        $project = $query
+                    ->orderBy($sortField, $sortDirection)
+                    ->paginate(10);
+
+        return $this->success(ProjectResource::collection($project), 'All Projects');
     }
 
     /**
@@ -120,6 +140,8 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project)
     {
-        //
+        $project->delete();
+        session()->flash('success', 'Project Deleted Successfully');
+        return to_route('projects.index');
     }
 }
