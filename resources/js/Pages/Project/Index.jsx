@@ -5,7 +5,7 @@ import TextInput from "@/Components/TextInput";
 import { PROJECT_STATUS_CLASS_MAP, PROJECT_STATUS_TEXT_MAP } from "@/constants";
 import { useFetchProject } from "@/hooks/useProject";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import deleteProjectService from "@/service/projectService";
+import { deleteProjectService } from "@/service/projectService";
 import { Head, Link, router, usePage } from "@inertiajs/react";
 import { useEffect, useState } from "react";
 

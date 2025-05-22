@@ -5,11 +5,16 @@ import TextAreaInput from "@/Components/TextAreaInput";
 import TextInput from "@/Components/TextInput";
 import { PROJECT_STATUS_TEXT_MAP } from "@/constants";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { createProjectService } from "@/service/projectService";
+import { Head, Link, router, useForm } from "@inertiajs/react";
+import { useState } from "react";
 
 export default function Create(){
 
-    const { data, setData, post, processing, errors, reset} = useForm({
+    const [processing, setProcessing] = useState(false);
+    const [flashMessage, setFlashMessage] = useState({});
+
+    const { data, setData, errors, reset} = useForm({
         image: '',
         name: '',
         status: '',
@@ -17,11 +22,24 @@ export default function Create(){
         due_date: ''    
     });
 
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
         e.preventDefault();
-
-        post(route('projects.store'));
+        setProcessing(true);
+        let response;
+        try{
+            response = await createProjectService(data);
+            if(response.status === 200){
+                return router.get(route('projects.index'));
+            }
+        }catch(error){
+            setFlashMessage({error: response ?? "Unable to create Project"})
+            
+        }finally{
+            setProcessing(false);
+        }
     }
+
+    console.group(flashMessage);
 
     return (
         <AuthenticatedLayout
@@ -39,6 +57,9 @@ export default function Create(){
             <div className="py-12">
                 <div className="py-12">
                     <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                        {flashMessage.error && (<div className="bg-red-500 mb-2 py-3 px-4 text-white rounded">
+                            {flashMessage.error}
+                        </div>)}
                         <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                             <div className="p-6 text-gray-900 dark:text-gray-100">
                                 

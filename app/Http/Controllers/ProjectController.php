@@ -93,15 +93,14 @@ class ProjectController extends Controller
             $imagePath = $request->file('image')->store('project/' . Str::random(), 'public');
         }
 
-        Project::create([
+        $project = Project::create([
             ...$request->validated(),
             'image' => $imagePath,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ]);
 
-        session()->flash('success', 'Project Created Successfully');
-        return to_route('projects.index');
+        return $project ? $this->success([], 'Project Created Successfully') : $this->error([], 'Problem Creating Project');
     }
 
     /**

@@ -1,7 +1,11 @@
 import axios from "axios";
 
-export default async function deleteProjectService(id){
+export async function createProjectService(payload){
+    const data = await axios.post(route('projects.store'), payload);
+    return data;
+}
+
+export async function deleteProjectService(id){
     const data = await axios.delete(route('projects.destroy', id));
-    console.log(data);
     return data;
 }
