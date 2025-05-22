@@ -1,14 +1,64 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, router } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 import TasksTable from "./TasksTable";
+import { useFetchTasks } from "@/hooks/useTasks";
+import { useEffect, useState } from "react";
 
-export default function index({ tasks, queryParams = null }){
+export default function index(){
 
-    // console.log(queryParams)
-
+    const [currentPage, setCurrentPage] = useState(1);
+        const [queryParams, setQueryParams] = useState({});
+        const {flash} = usePage().props;
+        const [flashMessage, setFlashMessage] = useState(flash);
+    
+        const {data: tasks, isLoading, refetch} = useFetchTasks({...queryParams, page: currentPage});
+    
+        useEffect(() => {
+            refetch();
+        }, [queryParams, currentPage]);
+    
+        const searchFieldChange = (name, value) => {
+            setQueryParams(prev => {
+                const updated = { ...prev };
+                if (value) {
+                    updated[name] = value;
+                } else {
+                    delete updated[name];
+                }
+                return updated;
+            });
+        };
     
     
+        const onKeyPress = (name, e) => {
+            if(e.key !== 'Enter') return;
     
+            searchFieldChange(name, e.target.value);
+        }
+    
+        const sortChanged = (name) => {
+            setQueryParams(prev => {
+                const updated = { ...prev };
+                if (name === updated.sort_field) {
+                    updated.sort_direction = updated.sort_direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    updated.sort_field = name;
+                    updated.sort_direction = 'asc';
+                }
+                return updated;
+            });
+        }
+    
+        useEffect(() => {
+            if (flash.success) {
+                const timeout = setTimeout(() => {
+                    setFlashMessage([]);
+                }, 4000);
+    
+                return () => clearTimeout(timeout);
+            }
+        }, [flash.success]);
+
     return (
         <AuthenticatedLayout
             header={
@@ -32,7 +82,7 @@ export default function index({ tasks, queryParams = null }){
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
-                            <TasksTable queryParams={queryParams} tasks={tasks}/>
+                            <TasksTable setCurrentPage={setCurrentPage} queryParams={queryParams} setQueryParams={setQueryParams} tasks={tasks}/>
                         </div>
                     </div>
                 </div>

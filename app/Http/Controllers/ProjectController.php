@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ProjectResource;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
+use App\Http\Resources\ProjectCollection;
+use App\Http\Resources\TaskCollection;
 use App\Traits\ApiResponse;
 
 class ProjectController extends Controller
@@ -20,24 +22,6 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        $query = Project::with(['createdBy', 'updatedBy']);
-
-        $sortField = request('sort_field', 'created_at');
-        $sortDirection = request('sort_direction', 'desc');
-
-        if(request('name')){
-            $query->where('name', 'like', '%'.request('name').'%');
-        }
-
-        if(request('status')){
-            $query->where('status', 'like', '%'.request('status').'%');
-        }
-
-        $project = $query
-                    ->orderBy($sortField, $sortDirection)
-                    ->paginate(10)
-                    ->onEachSide(1);
-
         return inertia('Project/Index');
     }
 
@@ -59,7 +43,35 @@ class ProjectController extends Controller
                     ->orderBy($sortField, $sortDirection)
                     ->paginate(10);
 
-        return $this->success(ProjectResource::collection($project), 'All Projects');
+        return $this->success(new ProjectCollection($project), 'All Projects');
+    }
+
+    public function fetchTaskByProject($projectId){
+        $query = Task::with(['createdBy', 'updatedBy', 'project', 'assignedTo'])->where('project_id', $projectId);
+
+        $sortField = request('sort_field', 'created_at');
+        $sortDirection = request('sort_direction', 'desc');
+
+        if(request('name')){
+            $query->where('name', 'like', '%'.request('name').'%');
+        }
+
+        if(request('status')){
+            $query->where('status', 'like', '%'.request('status').'%');
+        }
+
+        if(request('project_name')){
+            $name = request('project_name');
+            $query->whereHas('project', function($query) use ($name){
+                $query->where('name', 'like', '%'.$name.'%');
+            });
+        }
+
+        $task = $query
+                    ->orderBy($sortField, $sortDirection)
+                    ->paginate(10);
+
+        return $this->success(new TaskCollection($task), 'All Task Under This Project');
     }
 
     /**
@@ -95,28 +107,21 @@ class ProjectController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Project $project)
+    public function show($id)
     {
-        $query = $project->tasks();
-
-        $sortField = request('sort_field', 'created_at');
-        $sortDirection = request('sort_direction', 'desc');
-
-        if(request('name')){
-            $query->where('name', 'like', '%'.request('name').'%');
-        }
-
-        if(request('status')){
-            $query->where('status', 'like', '%'.request('status').'%');
-        }
-
-        $task = $query->orderBy($sortField, $sortDirection)
-                    ->paginate(10)
-                    ->onEachSide(1);;
         return inertia('Project/Show', [
-            'project' => new ProjectResource($project->load(['createdBy', 'updatedBy'])),
-            'tasks' => TaskResource::collection($task)
+            'id' => $id
         ]);
+    }
+
+    public function fetchSingleProject($id){
+        $project = Project::with(['createdBy', 'updatedBy', 'tasks'])->find($id);
+
+        if(!empty($project)){
+            return $this->success(new ProjectResource($project), 'Single Project');
+        }
+
+        return $this->error('Project Not Found');
     }
 
     /**
@@ -142,6 +147,6 @@ class ProjectController extends Controller
     {
         $project->delete();
         session()->flash('success', 'Project Deleted Successfully');
-        return to_route('projects.index');
+        return $this->success([], 'Project Deleted');
     }
 }

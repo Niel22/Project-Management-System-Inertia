@@ -5,18 +5,20 @@ import TextInput from "@/Components/TextInput";
 import { TASK_STATUS_CLASS_MAP, TASK_STATUS_TEXT_MAP } from "@/constants";
 import { Link, router } from "@inertiajs/react";
 
-export default function({ tasks, queryParams = null, showPoject = true }){
-    queryParams = queryParams || {};
+export default function({ setQueryParams, setCurrentPage, tasks, queryParams = null, showPoject = true }){
 
     const searchFieldChange = (name, value) => {
-        if(value){
-            queryParams[name] = value;
-        }else{
-            delete queryParams[name];
-        }
+        setQueryParams(prev => {
+            const updated = { ...prev };
+            if (value) {
+                updated[name] = value;
+            } else {
+                delete updated[name];
+            }
+            return updated;
+        });
+    };
 
-        router.get(route('tasks.index'), queryParams);
-    }
 
     const onKeyPress = (name, e) => {
         if(e.key !== 'Enter') return;
@@ -25,18 +27,16 @@ export default function({ tasks, queryParams = null, showPoject = true }){
     }
 
     const sortChanged = (name) => {
-        if(name === queryParams.sort_field){
-            if(queryParams.sort_direction === 'asc'){
-                queryParams.sort_direction = 'desc';
-            }else{
-                queryParams.sort_direction = 'asc';
+        setQueryParams(prev => {
+            const updated = { ...prev };
+            if (name === updated.sort_field) {
+                updated.sort_direction = updated.sort_direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                updated.sort_field = name;
+                updated.sort_direction = 'asc';
             }
-        }else{
-            queryParams.sort_field = name;
-            queryParams.sort_direction = 'asc';
-        }
-
-        router.get(route('tasks.index'), queryParams);
+            return updated;
+        });
     }
 
     return (
@@ -130,7 +130,7 @@ export default function({ tasks, queryParams = null, showPoject = true }){
                 </table>
                 
             </div>
-            {tasks?.data?.length > 0 && <Pagination links={tasks.meta.links} />}
+            {tasks?.data?.length > 0 && <Pagination setCurrentPage={setCurrentPage} meta={tasks.meta} />}
         </>
     )
 }

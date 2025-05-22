@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
+use App\Http\Resources\TaskCollection;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
+use App\Traits\ApiResponse;
 
 class TaskController extends Controller
 {
+    use ApiResponse;
     /**
      * Display a listing of the resource.
      */
@@ -44,6 +47,35 @@ class TaskController extends Controller
             'queryParams' => request()->query() ?? null
         ]);
     }
+
+    public function fetchAllTasks(){
+        $query = Task::with(['createdBy', 'updatedBy', 'project', 'assignedTo']);
+
+        $sortField = request('sort_field', 'created_at');
+        $sortDirection = request('sort_direction', 'desc');
+
+        if(request('name')){
+            $query->where('name', 'like', '%'.request('name').'%');
+        }
+
+        if(request('status')){
+            $query->where('status', 'like', '%'.request('status').'%');
+        }
+
+        if(request('project_name')){
+            $name = request('project_name');
+            $query->whereHas('project', function($query) use ($name){
+                $query->where('name', 'like', '%'.$name.'%');
+            });
+        }
+
+        $task = $query
+                    ->orderBy($sortField, $sortDirection)
+                    ->paginate(10);
+        return $this->success(new TaskCollection($task), 'All Task');
+    }
+
+    
 
     /**
      * Show the form for creating a new resource.

@@ -3,38 +3,37 @@ import SelectInput from "@/Components/SelectInput";
 import TableHeading from "@/Components/TableHeading";
 import TextInput from "@/Components/TextInput";
 import { PROJECT_STATUS_CLASS_MAP, PROJECT_STATUS_TEXT_MAP } from "@/constants";
+import { useFetchProject } from "@/hooks/useProject";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import deleteProjectService from "@/service/projectService";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import axios from "axios";
 import { useEffect, useState } from "react";
 
-export default function Index({ queryParams, success }){
 
-    const [projects, setProjects] = useState(null);
+export default function Index({ success }){
     const [currentPage, setCurrentPage] = useState(1);
-
-    console.log(projects);
-
-    useEffect(() => {
-        axios.get(`/all-projects?page=${currentPage}`).then((response) => {
-            setProjects(data);
-        });
-    }, []);
-
-    queryParams = queryParams || {};
-
+    const [queryParams, setQueryParams] = useState({});
     const {flash} = usePage().props;
     const [flashMessage, setFlashMessage] = useState(flash);
 
-    const searchFieldChange = (name, value) => {
-        if(value){
-            queryParams[name] = value;
-        }else{
-            delete queryParams[name];
-        }
+    const {data: projects, isLoading, refetch} = useFetchProject({...queryParams, page: currentPage});
 
-        router.get(route('projects.index'), queryParams);
-    }
+    useEffect(() => {
+        refetch();
+    }, [queryParams, currentPage]);
+
+    const searchFieldChange = (name, value) => {
+        setQueryParams(prev => {
+            const updated = { ...prev };
+            if (value) {
+                updated[name] = value;
+            } else {
+                delete updated[name];
+            }
+            return updated;
+        });
+    };
+
 
     const onKeyPress = (name, e) => {
         if(e.key !== 'Enter') return;
@@ -43,20 +42,39 @@ export default function Index({ queryParams, success }){
     }
 
     const sortChanged = (name) => {
-        if(name === queryParams.sort_field){
-            if(queryParams.sort_direction === 'asc'){
-                queryParams.sort_direction = 'desc';
-            }else{
-                queryParams.sort_direction = 'asc';
+        setQueryParams(prev => {
+            const updated = { ...prev };
+            if (name === updated.sort_field) {
+                updated.sort_direction = updated.sort_direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                updated.sort_field = name;
+                updated.sort_direction = 'asc';
             }
-        }else{
-            queryParams.sort_field = name;
-            queryParams.sort_direction = 'asc';
-        }
-
-        router.get(route('projects.index'), queryParams);
+            return updated;
+        });
     }
 
+    const handleDelete = async (id) => {
+        if(!window.confirm('Are you sure you want to delete this project?')) return;
+        setFlashMessage({});
+
+        const data = await deleteProjectService(id);
+        if(data?.status === 200){
+            
+            setFlashMessage((prev) => ({
+                ...prev,
+                success: 'Project Deleted Successfully',
+            }));
+            refetch();
+            return;
+        }
+
+        setFlashMessage((prev) => ({
+            ...prev,
+            success: data?.data?.message || 'An error occurred',
+        }));
+
+    }
     useEffect(() => {
         if (flash.success) {
             const timeout = setTimeout(() => {
@@ -160,34 +178,41 @@ export default function Index({ queryParams, success }){
                                             <th className="px-3 py-5 text-right"></th>
                                         </tr>
                                     </thead>
-                                    {projects?.data?.length ? (
-                                        <ProjectsList projects={projects.data} />
+                                    {isLoading ? (
+                                        <tbody>
+                                            <tr className="py-5 text-center">
+                                                <td colSpan={5}>
+                                                    Project List Loading
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    ) : projects?.data?.length ? (
+                                        <ProjectsList handleDelete={handleDelete} projects={projects.data} />
                                     ) : (
                                         <tbody>
                                             <tr className="py-5 text-center">
-                                                <h1>Project Not Found</h1>
+                                                <td colSpan={5}>
+                                                Project Not Found
+                                                </td>
                                             </tr>
                                         </tbody>
-                                    )}                                    
+                                    )}
                                 </table>
                             </div>
-                            {projects?.data?.length > 0  && <Pagination  links={projects.meta.links} />}
+                            {projects?.data?.length > 0  && <Pagination setCurrentPage={setCurrentPage} currentPage={currentPage}  meta={projects.meta} />}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        
         </AuthenticatedLayout>
     )
 }
 
-function ProjectsList({projects}){
+function ProjectsList({projects, handleDelete}){
 
-    const deleteProject = (id) => {
-
-        if(!window.confirm('Are you sure you want to delete this project?')) return;
-        router.delete(route('projects.destroy', id));
-    }
+    
 
     return (
         <tbody>
@@ -212,7 +237,7 @@ function ProjectsList({projects}){
                     <td className="px-3 py-5 text-nowrap">{project.createdBy.name}</td>
                     <td className="px-3 py-5 text-nowrap">
                         <Link className="font-medium text-blue-600 dark:text-blue-500 bg-slate-700 hover:bg-slate-900 py-2 px-3 mx-1 rounded-md" href={route('projects.edit', project.id)}>Edit</Link>
-                        <button onClick={() => deleteProject(project.id)} className="font-medium text-white dark:text-white rounded-md bg-red-600 py-2 px-3 hover:bg-red-800 transition-all shadow mx-1">Delete</button>
+                        <button onClick={() => handleDelete(project.id)} className="font-medium text-white dark:text-white rounded-md bg-red-600 py-2 px-3 hover:bg-red-800 transition-all shadow mx-1">Delete</button>
                     </td>
                 </tr>
             ))}

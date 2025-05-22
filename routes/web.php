@@ -12,11 +12,17 @@ Route::redirect('/', '/dashboard');
 
 
 
+Route::get('all-projects', [ProjectController::class, 'fetchAllProjects']);
+Route::get('single-project/{id}', [ProjectController::class, 'fetchSingleProject']);
+Route::get('single-project/{projectId}/tasks', [ProjectController::class, 'fetchTaskByProject']);
+
+Route::get('all-tasks', [TaskController::class, 'fetchAllTasks']);
+Route::get('single-task/{id}', [TaskController::class, 'fetchSingleTask']);
+
 Route::middleware(['auth', 'verified'])->group(function(){
     Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
 
     Route::resource('projects', ProjectController::class);
-    Route::get('all-projects', [ProjectController::class, 'fetchAllProjects']);
     Route::resource('tasks', TaskController::class);
     Route::resource('users', UserController::class);
 });
