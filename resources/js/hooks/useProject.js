@@ -1,14 +1,11 @@
+import { fetchProjectService } from "@/service/projectService"
 import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 
 export const useFetchProject = (queryParams) => {
     return useQuery({
         queryKey: ['projects', queryParams],
-        queryFn: async () => {
-            const response = await axios.get('/all-projects', {params: queryParams});
-            const {data} = response;
-            return data.data;
-        },
+        queryFn: () => fetchProjectService(queryParams),
         enabled: true,
         staleTime: 5 * 60 * 1000
     })

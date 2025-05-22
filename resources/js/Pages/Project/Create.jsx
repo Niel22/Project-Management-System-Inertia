@@ -1,3 +1,4 @@
+import FlashMessage from "@/Components/FlashMessage";
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
 import SelectInput from "@/Components/SelectInput";
@@ -6,13 +7,15 @@ import TextInput from "@/Components/TextInput";
 import { PROJECT_STATUS_TEXT_MAP } from "@/constants";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { createProjectService } from "@/service/projectService";
+import { setFlashMessage } from "@/stores/slices/flashMessageSlice";
 import { Head, Link, router, useForm } from "@inertiajs/react";
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function Create(){
 
     const [processing, setProcessing] = useState(false);
-    const [flashMessage, setFlashMessage] = useState({});
+    const dispatch = useDispatch();
 
     const { data, setData, errors, reset} = useForm({
         image: '',
@@ -29,17 +32,20 @@ export default function Create(){
         try{
             response = await createProjectService(data);
             if(response.status === 200){
-                return router.get(route('projects.index'));
+                dispatch(setFlashMessage({type: "success", message: "Project Created Successfully"}));
+
+                setTimeout(() => {
+                    return router.get(route('projects.index'));
+                }, 3000);
             }
         }catch(error){
-            setFlashMessage({error: response ?? "Unable to create Project"})
+            dispatch(setFlashMessage({type: "error", message: response ?? "Unable to create Project"}));
             
         }finally{
             setProcessing(false);
         }
     }
 
-    console.group(flashMessage);
 
     return (
         <AuthenticatedLayout
@@ -57,9 +63,7 @@ export default function Create(){
             <div className="py-12">
                 <div className="py-12">
                     <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                        {flashMessage.error && (<div className="bg-red-500 mb-2 py-3 px-4 text-white rounded">
-                            {flashMessage.error}
-                        </div>)}
+                        <FlashMessage/>
                         <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                             <div className="p-6 text-gray-900 dark:text-gray-100">
                                 

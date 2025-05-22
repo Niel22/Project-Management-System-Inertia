@@ -1,3 +1,4 @@
+import FlashMessage from "@/Components/FlashMessage";
 import Pagination from "@/Components/Pagination";
 import SelectInput from "@/Components/SelectInput";
 import TableHeading from "@/Components/TableHeading";
@@ -6,17 +7,20 @@ import { PROJECT_STATUS_CLASS_MAP, PROJECT_STATUS_TEXT_MAP } from "@/constants";
 import { useFetchProject } from "@/hooks/useProject";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { deleteProjectService } from "@/service/projectService";
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { clearFlashMessage, setFlashMessage } from "@/stores/slices/flashMessageSlice";
+import { Head, Link, usePage } from "@inertiajs/react";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 
-export default function Index({ success }){
+export default function Index(){
     const [currentPage, setCurrentPage] = useState(1);
     const [queryParams, setQueryParams] = useState({});
-    const {flash} = usePage().props;
-    const [flashMessage, setFlashMessage] = useState(flash);
+    const dispatch = useDispatch()
 
     const {data: projects, isLoading, refetch} = useFetchProject({...queryParams, page: currentPage});
+
+    // console.log(flashMessage);
 
     useEffect(() => {
         refetch();
@@ -61,10 +65,7 @@ export default function Index({ success }){
         const data = await deleteProjectService(id);
         if(data?.status === 200){
             
-            setFlashMessage((prev) => ({
-                ...prev,
-                success: 'Project Deleted Successfully',
-            }));
+            dispatch(setFlashMessage({type: "success", message: "Project Deleted Successfully"}));
             refetch();
             return;
         }
@@ -75,16 +76,8 @@ export default function Index({ success }){
         }));
 
     }
-    useEffect(() => {
-        if (flash.success) {
-            const timeout = setTimeout(() => {
-                setFlashMessage([]);
-            }, 4000);
 
-            return () => clearTimeout(timeout);
-        }
-    }, [flash.success]);
-    
+
     
     return(
         <AuthenticatedLayout
@@ -106,9 +99,7 @@ export default function Index({ success }){
         <div className="py-12">
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    {flashMessage.success && (<div className="bg-emerald-500 mb-2 py-3 px-4 text-white rounded">
-                        {flashMessage.success}
-                    </div>)}
+                    <FlashMessage/>
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
                             <div className="overflow-auto">

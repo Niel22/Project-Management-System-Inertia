@@ -45,6 +45,7 @@ class ProjectController extends Controller
 
         return $this->success(new ProjectCollection($project), 'All Projects');
     }
+    
 
     public function fetchTaskByProject($projectId){
         $query = Task::with(['createdBy', 'updatedBy', 'project', 'assignedTo'])->where('project_id', $projectId);

@@ -12,7 +12,7 @@ Route::redirect('/', '/dashboard');
 
 
 
-Route::get('all-projects', [ProjectController::class, 'fetchAllProjects']);
+Route::get('all-projects', [ProjectController::class, 'fetchAllProjects'])->name('project.lists');
 Route::get('single-project/{id}', [ProjectController::class, 'fetchSingleProject']);
 Route::get('single-project/{projectId}/tasks', [ProjectController::class, 'fetchTaskByProject']);
 
