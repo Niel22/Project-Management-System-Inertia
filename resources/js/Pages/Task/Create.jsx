@@ -4,61 +4,65 @@ import InputLabel from "@/Components/InputLabel";
 import SelectInput from "@/Components/SelectInput";
 import TextAreaInput from "@/Components/TextAreaInput";
 import TextInput from "@/Components/TextInput";
-import { PROJECT_STATUS_TEXT_MAP } from "@/constants";
+import { useFetchProject } from "@/hooks/useProject";
+import { useFetchUsers } from "@/hooks/userUser";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { createProjectService } from "@/service/projectService";
+import { createTaskService } from "@/service/taskService";
 import { setFlashMessage } from "@/stores/slices/flashMessageSlice";
 import { createFormData } from "@/utils/createFormData";
 import { handleInputChange } from "@/utils/handleInputChange";
+import { createTaskSchema } from "@/validators/taskSchema";
+import { joiResolver } from "@hookform/resolvers/joi";
 import { Head, Link, router } from "@inertiajs/react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useDispatch, useSelector } from "react-redux";
-import { joiResolver } from '@hookform/resolvers/joi';
-import { createProjectSchema } from "@/validators/projectSchema";
+import { useDispatch } from "react-redux";
 
-export default function Create(){
+export default function(){
 
     const [processing, setProcessing] = useState(false);
     const dispatch = useDispatch();
 
     const {register, handleSubmit, setValue, reset, formState: {errors} } = useForm({
-        resolver: joiResolver(createProjectSchema)
+        resolver: joiResolver(createTaskSchema)
     });
 
+    const {data: users, isLoading } = useFetchUsers();
+    const {data: projects, isLoading: projectLoading } = useFetchProject();
+
     const onSubmit = async (data) => {
+        console.log('see')
         setProcessing(true);
         const formData = createFormData(data);
         
         let response;
         try{
-            response = await createProjectService(formData);
+            response = await createTaskService(formData);
             if(response.status === 200){
-                dispatch(setFlashMessage({type: "success", message: "Project Created Successfully"}));
+                dispatch(setFlashMessage({type: "success", message: "Task Created Successfully"}));
 
                 setTimeout(() => {
-                    return router.get(route('projects.index'));
+                    return router.get(route('tasks.index'));
                 }, 3000);
             }
         }catch(error){
-            dispatch(setFlashMessage({type: "error", message: error.response.data.message ?? "Unable to create Project"}));
+            dispatch(setFlashMessage({type: "error", message: error.response.data.message ?? "Unable to create Tasks"}));
             setProcessing(false);
         }
     }
 
-
-    return (
+    return(
         <AuthenticatedLayout
             header={
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-white">
-                        Create New Project
+                        Create New Task
                     </h2>
                 </div>
             }
         >
 
-            <Head title="Create Project" />
+            <Head title="Create Task" />
 
             <div className="py-12">
                 <div className="py-12">
@@ -69,7 +73,7 @@ export default function Create(){
                                 
                                 <form onSubmit={handleSubmit(onSubmit)} className="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
                                     <div>
-                                        <InputLabel htmlFor="image" value="Project Image"/>
+                                        <InputLabel htmlFor="image" value="Task Image"/>
                                         <TextInput 
                                                 id="image" 
                                                 type="file" 
@@ -81,7 +85,7 @@ export default function Create(){
                                         <InputError message={errors.image?.message} className="mt-2" />
                                     </div>
                                     <div className="mt-4">
-                                        <InputLabel htmlFor="name" value="Project Name"/>
+                                        <InputLabel htmlFor="name" value="Task Name"/>
                                         <TextInput 
                                                 id="name" 
                                                 type="text" 
@@ -93,7 +97,7 @@ export default function Create(){
                                         <InputError message={errors.name?.message} className="mt-2" />
                                     </div>
                                     <div className="mt-4">
-                                        <InputLabel htmlFor="description" value="Project Description"/>
+                                        <InputLabel htmlFor="description" value="Task Description"/>
                                         <TextAreaInput
                                                 id="description" 
                                                 type="text" 
@@ -105,7 +109,7 @@ export default function Create(){
                                         <InputError message={errors.description?.message} className="mt-2" />
                                     </div>
                                     <div className="mt-4">
-                                        <InputLabel htmlFor="due_date" value="Project Deadline"/>
+                                        <InputLabel htmlFor="due_date" value="Task Deadline"/>
                                         <TextInput 
                                                 id="due_date" 
                                                 type="date" 
@@ -117,7 +121,23 @@ export default function Create(){
                                         <InputError message={errors.due_date?.message} className="mt-2" />
                                     </div>
                                     <div className="mt-4">
-                                        <InputLabel htmlFor="status" value="Project Status"/>
+                                        <InputLabel htmlFor="project_id" value="Project"/>
+                                        <SelectInput 
+                                                id="project_id" 
+                                                name="project_id" 
+                                                className="mt-1 block w-full"
+                                                {...register('project_id')}
+                                                onChange={(e) => handleInputChange(e, setValue)}
+                                        >
+                                            <option value="">Select Project</option>
+                                            {!projectLoading && projects.data.map((project) => (
+                                                <option value={project.id}>{project.name}</option>
+                                            ))}
+                                        </SelectInput>
+                                        <InputError message={errors.status?.message} className="mt-2" />
+                                    </div>
+                                    <div className="mt-4">
+                                        <InputLabel htmlFor="status" value="Task Status"/>
                                         <SelectInput 
                                                 id="status" 
                                                 name="status" 
@@ -132,10 +152,42 @@ export default function Create(){
                                         </SelectInput>
                                         <InputError message={errors.status?.message} className="mt-2" />
                                     </div>
+                                    <div className="mt-4">
+                                        <InputLabel htmlFor="priority" value="Priority"/>
+                                        <SelectInput 
+                                                id="priority" 
+                                                name="priority" 
+                                                className="mt-1 block w-full"
+                                                {...register('priority')}
+                                                onChange={(e) => handleInputChange(e, setValue)}
+                                        >
+                                            <option value="">Select Status</option>
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                        </SelectInput>
+                                        <InputError message={errors.status?.message} className="mt-2" />
+                                    </div>
+                                    <div className="mt-4">
+                                        <InputLabel htmlFor="assigned_to" value="User Assigned"/>
+                                        <SelectInput 
+                                                id="assigned_to" 
+                                                name="assigned_to" 
+                                                className="mt-1 block w-full"
+                                                {...register('assigned_to')}
+                                                onChange={(e) => handleInputChange(e, setValue)}
+                                        >
+                                            <option value="">Select User</option>
+                                            {!isLoading && users.map((user) => (
+                                                <option key={user.id} value={user.id}>{user.name}</option>
+                                            ))}
+                                        </SelectInput>
+                                        <InputError message={errors.status?.message} className="mt-2" />
+                                    </div>
                                     <div className="mt-4 text-right">
-                                        <Link href={route('projects.index')} className="bg-gray-100 py-2 px-3 text-gray-800 rounded shadow transition-all hover:bg-gray-200 mr-2 text-sm">Cancel</Link>
+                                        <Link href={route('tasks.index')} className="bg-gray-100 py-2 px-3 text-gray-800 rounded shadow transition-all hover:bg-gray-200 mr-2 text-sm">Cancel</Link>
                                         <button disabled={processing} className="bg-emerald-500 py-2 px-3 text-white rounded shadow transition-all hover:bg-emerald-600 text-sm">
-                                            {processing ? "Creating Project..." : "Create Project"}
+                                            {processing ? "Creating Task..." : "Create Task"}
                                         </button>
                                     </div>
                                 </form>

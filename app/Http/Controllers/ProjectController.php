@@ -13,19 +13,14 @@ use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectCollection;
 use App\Http\Resources\TaskCollection;
 use App\Traits\ApiResponse;
+use Illuminate\Support\Facades\Storage;
 
 class ProjectController extends Controller
 {
     use ApiResponse;
-    /**
-     * Display a listing of the resource.
-     */
+    
     public function index()
     {
-        return inertia('Project/Index');
-    }
-
-    public function fetchAllProjects(){
         $query = Project::with(['createdBy', 'updatedBy']);
 
         $sortField = request('sort_field', 'created_at');
@@ -75,17 +70,6 @@ class ProjectController extends Controller
         return $this->success(new TaskCollection($task), 'All Task Under This Project');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return inertia('Project/Create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreProjectRequest $request)
     {
         $imagePath = null;
@@ -104,17 +88,8 @@ class ProjectController extends Controller
         return $project ? $this->success([], 'Project Created Successfully') : $this->error([], 'Problem Creating Project');
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show($id)
     {
-        return inertia('Project/Show', [
-            'id' => $id
-        ]);
-    }
-
-    public function fetchSingleProject($id){
         $project = Project::with(['createdBy', 'updatedBy', 'tasks'])->find($id);
 
         if(!empty($project)){
@@ -124,27 +99,31 @@ class ProjectController extends Controller
         return $this->error('Project Not Found');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Project $project)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateProjectRequest $request, Project $project)
     {
-        //
-    }
+        if ($request->hasFile('image')) {
+            $request['image'] = $request->file('image')->store('project/' . Str::random(), 'public');
 
-    /**
-     * Remove the specified resource from storage.
-     */
+            if($project->image){
+                Storage::disk('public')->delete($project->image);
+            }
+        }
+
+
+        $result = $project->update([
+            ...$request->validated(),
+            'updated_by' => Auth::id(),
+        ]);
+
+        return $result ? $this->success([$request], 'Project Updated Successfully') : $this->error([], 'Problem Updating Project');
+    }
+    
+
     public function destroy(Project $project)
     {
+        if($project->image){
+            Storage::disk('public')->delete($project->image);
+        }
         $project->delete();
         session()->flash('success', 'Project Deleted Successfully');
         return $this->success([], 'Project Deleted');

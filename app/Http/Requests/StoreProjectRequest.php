@@ -26,7 +26,7 @@ class StoreProjectRequest extends FormRequest
             'description' => 'required|string',
             'status' => 'required|in:pending,in_progress,completed|',
             'due_date' => 'required|date',
-            'image' => 'nullable|image'
+            'image' => 'required|image'
         ];
     }
 }

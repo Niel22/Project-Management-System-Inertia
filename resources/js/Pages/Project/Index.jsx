@@ -20,8 +20,6 @@ export default function Index(){
 
     const {data: projects, isLoading, refetch} = useFetchProject({...queryParams, page: currentPage});
 
-    // console.log(flashMessage);
-
     useEffect(() => {
         refetch();
     }, [queryParams, currentPage]);
@@ -203,8 +201,6 @@ export default function Index(){
 
 function ProjectsList({projects, handleDelete}){
 
-    
-
     return (
         <tbody>
             {projects.map((project, index) => (
@@ -223,8 +219,8 @@ function ProjectsList({projects, handleDelete}){
                             {PROJECT_STATUS_TEXT_MAP[project.status]}
                         </span>
                     </td>
-                    <td className="px-3 py-5 text-nowrap">{new Date(project.created_at).toLocaleString()}</td>
-                    <td className="px-3 py-5 text-nowrap">{new Date(project.due_date).toLocaleString()}</td>
+                    <td className="px-3 py-5 text-nowrap">{project.created_at}</td>
+                    <td className="px-3 py-5 text-nowrap">{project.due_date}</td>
                     <td className="px-3 py-5 text-nowrap">{project.createdBy.name}</td>
                     <td className="px-3 py-5 text-nowrap">
                         <Link className="font-medium text-blue-600 dark:text-blue-500 bg-slate-700 hover:bg-slate-900 py-2 px-3 mx-1 rounded-md" href={route('projects.edit', project.id)}>Edit</Link>

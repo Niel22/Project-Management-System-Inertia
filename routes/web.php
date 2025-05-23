@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AppController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
@@ -10,21 +11,38 @@ use Inertia\Inertia;
 
 Route::redirect('/', '/dashboard');
 
+// Route::get('single-project/{projectId}/tasks', [ProjectController::class, 'fetchTaskByProject']);
 
-
-Route::get('all-projects', [ProjectController::class, 'fetchAllProjects'])->name('project.lists');
-Route::get('single-project/{id}', [ProjectController::class, 'fetchSingleProject']);
-Route::get('single-project/{projectId}/tasks', [ProjectController::class, 'fetchTaskByProject']);
-
-Route::get('all-tasks', [TaskController::class, 'fetchAllTasks']);
-Route::get('single-task/{id}', [TaskController::class, 'fetchSingleTask']);
-
-Route::middleware(['auth', 'verified'])->group(function(){
+Route::middleware(['web', 'auth', 'verified'])->group(function(){
     Route::get('/dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
 
-    Route::resource('projects', ProjectController::class);
-    Route::resource('tasks', TaskController::class);
-    Route::resource('users', UserController::class);
+    Route::inertia('/projects', 'Project/Index')->name('projects.index');
+    Route::inertia('/projects/create', 'Project/Create')->name('projects.create');
+    Route::get('/projects/{project}', function ($id) {
+        return inertia('Project/Show', ['id' => $id]);
+    })->name('projects.show');
+    Route::get('/projects/{project}/edit', function ($id) {
+        return inertia('Project/Edit', ['id' => $id]);
+    })->name('projects.edit');
+
+    // Task
+    Route::inertia('tasks', 'Task/Index')->name('tasks.index');
+    Route::inertia('tasks/create', 'Task/Create')->name('tasks.create');
+    Route::get('/tasks/{task}', function ($id) {
+        return inertia('Task/Show', ['id' => $id]);
+    })->name('tasks.show');
+    Route::get('/tasks/{task}/edit', function ($id) {
+        return inertia('Task/Edit', ['id' => $id]);
+    })->name('tasks.edit');
+    
+    
+});
+
+Route::prefix('api')->middleware('api')->group(function(){
+    Route::apiResource('project', ProjectController::class);
+    Route::get('project/{id}/tasks', [ProjectController::class, 'fetchTaskByProject']);
+    Route::apiResource('task', TaskController::class);
+    Route::apiResource('user', UserController::class);
 });
 
 Route::middleware('auth')->group(function () {

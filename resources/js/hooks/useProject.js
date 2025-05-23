@@ -1,8 +1,7 @@
-import { fetchProjectService } from "@/service/projectService"
+import { fetchProjectService, fetchSingleProjectService, fetchTaskByProjectService } from "@/service/projectService"
 import { useQuery } from "@tanstack/react-query"
-import axios from "axios"
 
-export const useFetchProject = (queryParams) => {
+export const useFetchProject = (queryParams = null) => {
     return useQuery({
         queryKey: ['projects', queryParams],
         queryFn: () => fetchProjectService(queryParams),
@@ -14,11 +13,7 @@ export const useFetchProject = (queryParams) => {
 export const useFetchSingleProject = (id) => {
     return useQuery({
         queryKey: ['project', id],
-        queryFn: async () => {
-            const response = await axios.get(`/single-project/${id}`);
-            const {data} = response;
-            return data.data;
-        },
+        queryFn: () => fetchSingleProjectService(id),
         enabled: true,
         staleTime: 5 * 60 * 1000
     })
@@ -26,12 +21,8 @@ export const useFetchSingleProject = (id) => {
 
 export const useFetchTaskByProject = (projectId, queryParams) => {
     return useQuery({
-        queryKey: ['projects', projectId],
-        queryFn: async () => {
-            const response = await axios.get(`/single-project/${projectId}/tasks`, {params: queryParams});
-            const {data} = response;
-            return data.data;
-        },
+        queryKey: ['projects', projectId, queryParams],
+        queryFn: () => fetchTaskByProjectService(projectId, queryParams),
         enabled: true,
         staleTime: 5 * 60 * 1000
     })
